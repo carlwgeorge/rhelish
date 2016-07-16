@@ -1,6 +1,10 @@
-import click
+import os
 
-from rhelish import pkgdb
+import click
+from configobj import ConfigObj
+from prettytable import PrettyTable
+
+from rhelish import pkgdb, mdapi
 
 
 @click.command()
@@ -22,3 +26,18 @@ def cli(package, search, info):
             'https://bugzilla.redhat.com/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=ON_QA&component={}'.format(package)
         ]
         click.echo('\n'.join(urls))
+    else:
+        # display versions of package across Fedora and EPEL
+
+        # initialize config
+        config_home = os.environ.get('XDG_CONFIG_HOME', os.path.expanduser('~/.config'))
+        config = ConfigObj('{}/{}.ini'.format(config_home, __name__))
+
+        table = PrettyTable(['BRANCH', 'VERSION'])
+        for branch in config['fedora']['branches']:
+            version = mdapi.get_version(package, branch)
+            if version:
+                table.add_row([branch, version])
+
+        table.sortby = 'BRANCH'
+        click.echo(table)
