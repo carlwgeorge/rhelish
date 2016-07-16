@@ -13,15 +13,16 @@ def get_version(package, branch):
     elif branch == 'epel6':
         branch = 'dist-6E-epel'
 
-    r = requests.get('{}/{}/pkg/{}'.format(api, branch, package))
-    if r.ok:
-        result = r.json()
+    url = '{}/{}/pkg/{}'.format(api, branch, package)
+    response = requests.get(url)
+    if response.ok:
+        data = response.json()
         try:
-            epoch = result['epoch']
-            version = result['version']
-            release = result['release']
-            return '{}:{}-{}'.format(epoch, version, release)
+            epoch = data['epoch']
+            version = data['version']
+            release = data['release']
         except KeyError:
-            raise KeyError('unexpected json from {}'.format(r.url))
+            raise KeyError('unexpected json from {}'.format(response.url))
+        return '{}:{}-{}'.format(epoch, version, release)
     else:
         return None
