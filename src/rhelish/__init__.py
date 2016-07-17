@@ -5,7 +5,8 @@ import click
 from configobj import ConfigObj
 from prettytable import PrettyTable
 
-from rhelish import pkgdb, mdapi
+from rhelish import mdapi
+from rhelish.fedora import list_packages
 
 
 # setup config
@@ -26,11 +27,6 @@ def get_links(package):
         'http://koji.fedoraproject.org/koji/search?type=package&match=glob&terms={}'.format(package),
         'https://bugzilla.redhat.com/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=ON_QA&component={}'.format(package)
     ]
-
-
-async def do_search(package):
-    matches = await pkgdb.name_search(package)
-    return '\n'.join(matches)
 
 
 async def do_table(package):
@@ -65,7 +61,9 @@ def cli(package, info, search):
     else:
         loop = asyncio.get_event_loop()
         if search:
-            output = loop.run_until_complete(do_search(package))
+            # search for package names
+            matches = loop.run_until_complete(list_packages(package))
+            output = '\n'.join(matches)
         else:
             output = loop.run_until_complete(do_table(package))
         loop.close()
