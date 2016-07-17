@@ -5,7 +5,6 @@ import click
 from configobj import ConfigObj
 from prettytable import PrettyTable
 
-from rhelish import mdapi
 from rhelish.fedora import list_packages
 
 
@@ -36,7 +35,7 @@ async def do_table(package):
     output = PrettyTable(['BRANCH', 'VERSION'])
 
     tasks = [
-        asyncio.ensure_future(mdapi.get_evr(package, branch))
+        asyncio.ensure_future(get_evr(package, branch))
         for branch in branches
     ]
     await asyncio.wait(tasks)
