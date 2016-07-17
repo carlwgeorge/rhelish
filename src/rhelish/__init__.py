@@ -1,7 +1,11 @@
 import os
+import asyncio
 
 import click
 from configobj import ConfigObj
+from prettytable import PrettyTable
+
+from rhelish import pkgdb, mdapi
 
 
 def do_info(package):
@@ -15,28 +19,29 @@ def do_info(package):
     return '\n'.join(urls)
 
 
-def do_search(package):
-    from rhelish import pkgdb
-
-    matches = pkgdb.name_search(package)
+async def do_search(package):
+    matches = await pkgdb.name_search(package)
     return '\n'.join(matches)
 
 
-def do_table(package):
-    from prettytable import PrettyTable
-    from rhelish import mdapi
-
+async def do_table(package):
     config_home = os.environ.get('XDG_CONFIG_HOME', os.path.expanduser('~/.config'))
     config = ConfigObj('{}/{}.ini'.format(config_home, __name__))
+    branches =  config['fedora']['branches']
+    output = PrettyTable(['BRANCH', 'VERSION'])
 
-    result = PrettyTable(['BRANCH', 'VERSION'])
+    tasks = [
+        asyncio.ensure_future(mdapi.get_evr(package, branch))
+        for branch in branches
+    ]
+    await asyncio.wait(tasks)
+    results = [task.result() for task in tasks]
 
-    for branch in config['fedora']['branches']:
-        version = mdapi.get_version(package, branch)
-        result.add_row([branch, version])
+    for pair in zip(branches, results):
+        output.add_row(pair)
 
-    result.sortby = 'BRANCH'
-    return result
+    output.sortby = 'BRANCH'
+    return output
 
 
 @click.command()
@@ -44,14 +49,13 @@ def do_table(package):
 @click.option('--info', '-i', is_flag=True)
 @click.option('--search', '-s', is_flag=True)
 def cli(package, info, search):
-
     if info:
-        result = do_info(package)
-
-    elif search:
-        result = do_search(package)
-
+        output = do_info(package)
     else:
-        result = do_table(package)
-
-    click.echo(result)
+        loop = asyncio.get_event_loop()
+        if search:
+            output = loop.run_until_complete(do_search(package))
+        else:
+            output = loop.run_until_complete(do_table(package))
+        loop.close()
+    click.echo(output)

@@ -1,11 +1,11 @@
-import requests
+import aiohttp
 
 
 api = 'https://apps.fedoraproject.org/mdapi'
 
 
-def get_version(package, branch):
-    """Find the version of a package in a branch."""
+async def get_evr(package, branch):
+    """Get the epoch:version-release string of a package in a Fedora branch."""
 
     # some minor remaps
     if branch == 'epel5':
@@ -14,15 +14,14 @@ def get_version(package, branch):
         branch = 'dist-6E-epel'
 
     url = '{}/{}/pkg/{}'.format(api, branch, package)
-    response = requests.get(url)
-    if response.ok:
-        data = response.json()
-        try:
-            epoch = data['epoch']
-            version = data['version']
-            release = data['release']
-        except KeyError:
-            raise KeyError('unexpected json from {}'.format(response.url))
-        return '{}:{}-{}'.format(epoch, version, release)
-    else:
+    response = await aiohttp.get(url)
+    if response.status != 200:
+        response.close()
         return None
+
+    data = await response.json()
+    epoch = data['epoch']
+    version = data['version']
+    release = data['release']
+
+    return '{}:{}-{}'.format(epoch, version, release)

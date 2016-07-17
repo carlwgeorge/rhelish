@@ -14,7 +14,7 @@ setup(
         'click',
         'configobj',
         'prettytable',
-        'requests'
+        'aiohttp'
     ],
     entry_points={'console_scripts': ['rhelish=rhelish:cli']},
     classifiers=[
