@@ -30,17 +30,17 @@ def get_links(package):
 
 @click.command()
 @click.argument('package')
-@click.option('--info', '-i', is_flag=True)
-@click.option('--search', '-s', is_flag=True)
-def cli(package, info, search):
-    if info:
+@click.option('--links', '-l', 'action_links', is_flag=True)
+@click.option('--search', '-s', 'action_search', is_flag=True)
+def cli(package, action_links, action_search):
+    if action_links:
         # simple action
         links = get_links(package)
         output = '\n'.join(links)
     else:
         # async actions
         loop = asyncio.get_event_loop()
-        if search:
+        if action_search:
             # search for package names
             matches = loop.run_until_complete(list_packages(package))
             output = '\n'.join(matches)
