@@ -3,9 +3,9 @@ import asyncio
 
 import click
 from configobj import ConfigObj
-from prettytable import PrettyTable
 
 from rhelish.fedora import list_packages
+from rhelish.table import get_table
 
 
 # setup config
@@ -28,26 +28,6 @@ def get_links(package):
     ]
 
 
-async def do_table(package):
-    config_home = os.environ.get('XDG_CONFIG_HOME', os.path.expanduser('~/.config'))
-    config = ConfigObj('{}/{}.ini'.format(config_home, __name__))
-    branches =  config['fedora']['branches']
-    output = PrettyTable(['BRANCH', 'VERSION'])
-
-    tasks = [
-        asyncio.ensure_future(get_evr(package, branch))
-        for branch in branches
-    ]
-    await asyncio.wait(tasks)
-    results = [task.result() for task in tasks]
-
-    for pair in zip(branches, results):
-        output.add_row(pair)
-
-    output.sortby = 'BRANCH'
-    return output
-
-
 @click.command()
 @click.argument('package')
 @click.option('--info', '-i', is_flag=True)
@@ -58,12 +38,15 @@ def cli(package, info, search):
         links = get_links(package)
         output = '\n'.join(links)
     else:
+        # async actions
         loop = asyncio.get_event_loop()
         if search:
             # search for package names
             matches = loop.run_until_complete(list_packages(package))
             output = '\n'.join(matches)
         else:
-            output = loop.run_until_complete(do_table(package))
+            # find all versions across Fedora, EPEL, and RHEL
+            output = loop.run_until_complete(get_table(package))
         loop.close()
+
     click.echo(output)
