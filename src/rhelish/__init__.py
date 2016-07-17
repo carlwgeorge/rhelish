@@ -18,15 +18,14 @@ cache_dir = '{}/{}'.format(cache_home, __name__)
 os.makedirs(cache_dir, exist_ok=True)
 
 
-def do_info(package):
-    urls = [
+def get_links(package):
+    return [
         'http://pkgs.fedoraproject.org/cgit/{}.git'.format(package),
         'https://admin.fedoraproject.org/pkgdb/package/{}'.format(package),
         'https://bodhi.fedoraproject.org/updates/?packages={}'.format(package),
         'http://koji.fedoraproject.org/koji/search?type=package&match=glob&terms={}'.format(package),
         'https://bugzilla.redhat.com/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=ON_QA&component={}'.format(package)
     ]
-    return '\n'.join(urls)
 
 
 async def do_search(package):
@@ -60,7 +59,9 @@ async def do_table(package):
 @click.option('--search', '-s', is_flag=True)
 def cli(package, info, search):
     if info:
-        output = do_info(package)
+        # simple action
+        links = get_links(package)
+        output = '\n'.join(links)
     else:
         loop = asyncio.get_event_loop()
         if search:
