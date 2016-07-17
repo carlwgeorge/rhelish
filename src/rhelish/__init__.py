@@ -8,6 +8,16 @@ from prettytable import PrettyTable
 from rhelish import pkgdb, mdapi
 
 
+# setup config
+config_home = os.environ.get('XDG_CONFIG_HOME', os.path.expanduser('~/.config'))
+config = ConfigObj('{}/{}.ini'.format(config_home, __name__))
+
+# setup cache
+cache_home = os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache'))
+cache_dir = '{}/{}'.format(cache_home, __name__)
+os.makedirs(cache_dir, exist_ok=True)
+
+
 def do_info(package):
     urls = [
         'http://pkgs.fedoraproject.org/cgit/{}.git'.format(package),
