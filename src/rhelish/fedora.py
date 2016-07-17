@@ -1,4 +1,8 @@
+import asyncio
+
 import aiohttp
+
+import rhelish
 
 
 pkgdb = 'https://admin.fedoraproject.org/pkgdb/api'
@@ -35,3 +39,20 @@ async def get_evr(package, branch):
     release = data['release']
 
     return '{}:{}-{}'.format(epoch, version, release)
+
+
+async def get_evrs(package):
+
+    try:
+        branches = rhelish.config['fedora']['branches']
+    except KeyError:
+        raise SystemExit('cannot parse \'branches\' from \'fedora\' section of config')
+
+    tasks = [
+        asyncio.ensure_future(get_evr(package, branch))
+        for branch in branches
+    ]
+    await asyncio.wait(tasks)
+    results = [task.result() for task in tasks]
+
+    return zip(branches, results)
